@@ -44,5 +44,10 @@ class TestDatabase(unittest.TestCase):
         """We can load just one version into the database"""
         self.db.load('pip', '1.4.1')
 
+    def test_load_existing_version(self):
+        """If we try to load a version into the database that's already there, we get an error"""
+        self.db.load('pip', '1.4.1')
+        self.assertRaises(wensleydale.DatabaseError, self.db.load, 'pip', '1.4.1')
+
 if __name__ == '__main__':
     unittest.main()
