@@ -16,5 +16,8 @@ Unittest Level
 Refactoring
 -----------
 
+Massive hack to support commit/rollback without a database. Time to add a
+proper DB backing the data!
+
 Using duplicate detection in the commit/rollback test - fix to directly test
 for data in the DB
