@@ -16,6 +16,7 @@ class TestSources(unittest.TestCase):
         """THe null source should respond to all standard queries with no data"""
         null = wensleydale.sources.null
         self.assertEqual(null.packages(), [])
+        # Note - this implies that queries never raise errors...
         self.assertEqual(null.versions('foo', include_hidden=True), [])
         self.assertEqual(null.changes_since(date=datetime.now()), [])
         self.assertEqual(null.changes_since(serial=100), [])
@@ -57,7 +58,7 @@ class TestDatabase(unittest.TestCase):
         self.assertRaises(wensleydale.DatabaseError, self.db.load, 'pip', '1.4.1')
         self.db.load('setuptools', '1.4')
         self.db.rollback()
-        self.db.load,('setuptools', '1.4') # Should not raise
+        self.db.load('setuptools', '1.4') # Should not raise
         self.assertRaises(wensleydale.DatabaseError, self.db.load, 'pip', '1.4.1')
 
 if __name__ == '__main__':
