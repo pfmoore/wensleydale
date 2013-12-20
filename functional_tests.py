@@ -36,5 +36,13 @@ class TestDatabase(unittest.TestCase):
         # TODO: Needs a bit of work, obviously
         # self.assertEqual(self.db.tables, [...])
 
+    def test_load_packages(self):
+        """We can load a whole package at once into the database"""
+        self.db.load('setuptools')
+
+    def test_load_version(self):
+        """We can load just one version into the database"""
+        self.db.load('pip', '1.4.1')
+
 if __name__ == '__main__':
     unittest.main()
