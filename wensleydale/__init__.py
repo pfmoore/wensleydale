@@ -3,3 +3,5 @@ class DB:
         self.engine = engine
     def init(self):
         pass
+    def load(self, package, version=None):
+        pass
