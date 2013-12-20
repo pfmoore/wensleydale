@@ -49,5 +49,16 @@ class TestDatabase(unittest.TestCase):
         self.db.load('pip', '1.4.1')
         self.assertRaises(wensleydale.DatabaseError, self.db.load, 'pip', '1.4.1')
 
+    def test_commit_rollback(self):
+        """Test commit and rollback functionality"""
+        # TODO: Temporarily relying on duplicate detection
+        self.db.load('pip', '1.4.1')
+        self.db.commit()
+        self.assertRaises(wensleydale.DatabaseError, self.db.load, 'pip', '1.4.1')
+        self.db.load('setuptools', '1.4')
+        self.db.rollback()
+        self.db.load,('setuptools', '1.4') # Should not raise
+        self.assertRaises(wensleydale.DatabaseError, self.db.load, 'pip', '1.4.1')
+
 if __name__ == '__main__':
     unittest.main()
