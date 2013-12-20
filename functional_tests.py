@@ -14,10 +14,11 @@ class TestSources(unittest.TestCase):
 
     def test_null_source(self):
         """THe null source should respond to all standard queries with no data"""
-        self.assertEqual(wensleydale.null_source.packages(), [])
-        self.assertEqual(wensleydale.null_source.versions('foo', include_hidden=True), [])
-        self.assertEqual(wensleydale.null_source.changes_since(date=datetime.now()), [])
-        self.assertEqual(wensleydale.null_source.changes_since(serial=100), [])
+        null = wensleydale.sources.null
+        self.assertEqual(null.packages(), [])
+        self.assertEqual(null.versions('foo', include_hidden=True), [])
+        self.assertEqual(null.changes_since(date=datetime.now()), [])
+        self.assertEqual(null.changes_since(serial=100), [])
 
 
 class TestDatabase(unittest.TestCase):
