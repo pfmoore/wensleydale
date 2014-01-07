@@ -1,17 +1,12 @@
-class DatabaseError(Exception): pass
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from .model import Base
 
 class DB:
-    def __init__(self, engine):
-        self.engine = engine
-        self.packages = set()
-        self.old_packages = set()
-    def init(self):
-        pass
-    def commit(self):
-        self.old_packages = set(self.packages)
-    def rollback(self):
-        self.packages = set(self.old_packages)
-    def load(self, package, version=None):
-        if (package, version) in self.packages:
-            raise DatabaseError("Package {}/{} already present".format(package, version))
-        self.packages.add((package, version))
+    def __init__(self, engine="sqlite://"):
+        self.engine = create_engine(engine)
+        self.Session = sessionmaker(bind=self.engine)
+    def create_schema(self):
+        Base.metadata.create_all(self.engine)
+    def session(self):
+        return self.Session()
