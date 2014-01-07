@@ -26,10 +26,9 @@ class TestDatabase(unittest.TestCase):
     """Basic database management tests"""
 
     def setUp(self):
-        self.engine = create_engine('sqlite://')
-        self.db = wensleydale.DB(self.engine)
+        self.db = wensleydale.DB()
     def tearDown(self):
-        self.engine.dispose()
+        self.db.engine.dispose()
 
     def test_init(self):
         """The init method should create the schema"""
