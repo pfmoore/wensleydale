@@ -1,0 +1,58 @@
+package
+    - name
+    release
+        - version
+        - stable_version
+        - author
+        - author_email
+        - maintainer
+        - home_page
+        - license
+        - summary
+        - description
+        - keywords
+        - platform
+        - requires_python
+        - download_url
+        - bugtrack_url
+        - docs_url
+        - package_url
+        - release_url
+        - _pypi_hidden
+        - _pypi_ordering
+        - cheesecake_code_kwalitee_id
+        - cheesecake_documentation_id
+        - cheesecake_installability_id
+        provides
+            - req
+        requires
+            - req
+        obsoletes
+            - req
+        provides_dist
+            - req
+        requires_dist
+            - req
+        obsoletes_dist
+            - req
+        requires_external
+            - req
+        project_urls
+            - url
+        classifiers
+            - classifier
+        urls
+            - url
+            - filename
+            - has_sig
+            - md5_digest
+            - comment_text
+            - packagetype
+            - python_version
+            - downloads
+            - size
+            - upload_time
+        downloads [1]
+            - last_month
+            - last_week
+            - last_day
