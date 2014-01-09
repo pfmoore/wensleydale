@@ -110,7 +110,8 @@ def get(src, db, pkg, ver=None):
         d, u = src.release_data_and_urls(pkg, ver)
         if not d:
             return
-        rel = new_release(pkg, ver, d, u)
+        with session.no_autoflush:
+            rel = new_release(pkg, ver, d, u)
         session.merge(rel)
     else:
         load_package(session, src, pkg)

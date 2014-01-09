@@ -25,7 +25,7 @@ class Release(Base):
 
     id = Column(Integer, primary_key=True)
 
-    package_id = Column(Integer, ForeignKey('packages.id'))
+    package_id = Column(Integer, ForeignKey('packages.id'), nullable=False)
     version = Column(String, nullable=False)
 
     stable_version = Column(String)
@@ -73,7 +73,7 @@ class Dependency(Base):
     __tablename__ = 'dependencies'
 
     id = Column(Integer, primary_key=True)
-    release_id = Column(Integer, ForeignKey('releases.id'))
+    release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     # Check: valid values are
     #   provides, provides_dist, requires, requires_dist, requires_external, obsoletes, obsoletes_dist
@@ -93,7 +93,7 @@ class Classifier(Base):
     __tablename__ = 'classifiers'
 
     id = Column(Integer, primary_key=True)
-    release_id = Column(Integer, ForeignKey('releases.id'))
+    release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     classifier = Column(String, nullable=False)
 
@@ -109,7 +109,7 @@ class ProjectURL(Base):
     __tablename__ = 'project_urls'
 
     id = Column(Integer, primary_key=True)
-    release_id = Column(Integer, ForeignKey('releases.id'))
+    release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     url = Column(String, nullable=False)
 
@@ -125,7 +125,7 @@ class URL(Base):
     __tablename__ = 'urls'
 
     id = Column(Integer, primary_key=True)
-    release_id = Column(Integer, ForeignKey('releases.id'))
+    release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     url = Column(String, nullable=False)
 
@@ -153,7 +153,7 @@ class DownloadStats(Base):
     __tablename__ = 'downloads'
 
     id = Column(Integer, primary_key=True)
-    release_id = Column(Integer, ForeignKey('releases.id'))
+    release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     filename = Column(String, nullable=False)
     timestamp = Column(DateTime, default=func.now())
