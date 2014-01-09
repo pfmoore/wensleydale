@@ -1,0 +1,273 @@
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy import ForeignKey, ForeignKeyConstraint
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import func
+import datetime
+
+Base = declarative_base()
+
+class Package(Base):
+    __tablename__ = 'packages'
+
+    id = Column(Integer, primary_key=True)
+
+    name = Column(String, nullable=False)
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return "<Package(name={})>".format(self.name)
+
+class Release(Base):
+    __tablename__ = 'releases'
+
+    id = Column(Integer, primary_key=True)
+
+    package_id = Column(Integer, ForeignKey('packages.id'))
+    version = Column(String, nullable=False)
+
+    stable_version = Column(String)
+
+    author = Column(String)
+    author_email = Column(String)
+    maintainer = Column(String)
+    maintainer_email = Column(String)
+
+    home_page = Column(String)
+    license = Column(String)
+    summary = Column(String)
+    description = Column(String)
+    keywords = Column(String)
+
+    platform = Column(String)
+    requires_python = Column(String)
+
+    download_url = Column(String)
+    bugtrack_url = Column(String)
+    docs_url = Column(String)
+    package_url = Column(String)
+    release_url = Column(String)
+
+    _pypi_hidden = Column(Boolean)
+    _pypi_ordering = Column(Integer)
+    cheesecake_code_kwalitee_id = Column(String)
+    cheesecake_documentation_id = Column(String)
+    cheesecake_installability_id = Column(String)
+
+    project_url = Column(String)
+
+    package = relationship("Package",
+            cascade="all, delete-orphan",
+            single_parent=True,
+            backref=backref('releases', order_by=version))
+
+    def __init__(self, version):
+        self.version = version
+
+    def __repr__(self):
+        return "<Release(version={})>".format(self.version)
+
+class Dependency(Base):
+    __tablename__ = 'dependencies'
+
+    id = Column(Integer, primary_key=True)
+    release_id = Column(Integer, ForeignKey('releases.id'))
+
+    # Check: valid values are
+    #   provides, provides_dist, requires, requires_dist, requires_external, obsoletes, obsoletes_dist
+    dep_type = Column(String, primary_key=True)
+
+    req = Column(String, nullable=False)
+
+    release = relationship("Release",
+            cascade="all, delete-orphan",
+            single_parent=True,
+            backref=backref('dependencies'))
+
+    def __repr__(self):
+        return "<Dependency(type={}, req={})>".format(self.dep_type, self.req)
+
+class Classifier(Base):
+    __tablename__ = 'classifiers'
+
+    id = Column(Integer, primary_key=True)
+    release_id = Column(Integer, ForeignKey('releases.id'))
+
+    classifier = Column(String, nullable=False)
+
+    release = relationship("Release",
+            cascade="all, delete-orphan",
+            single_parent=True,
+            backref=backref('classifiers'))
+
+    def __repr__(self):
+        return "<Classifier({})>".format(self.classifier)
+
+class ProjectURL(Base):
+    __tablename__ = 'project_urls'
+
+    id = Column(Integer, primary_key=True)
+    release_id = Column(Integer, ForeignKey('releases.id'))
+
+    url = Column(String, nullable=False)
+
+    release = relationship("Release",
+            cascade="all, delete-orphan",
+            single_parent=True,
+            backref=backref('project_urls', order_by=id))
+
+    def __repr__(self):
+        return "<ProjectURL(url={})>".format(self.url)
+
+class URL(Base):
+    __tablename__ = 'urls'
+
+    id = Column(Integer, primary_key=True)
+    release_id = Column(Integer, ForeignKey('releases.id'))
+
+    url = Column(String, nullable=False)
+
+    filename = Column(String)
+    has_sig = Column(Boolean)
+    md5_digest = Column(String)
+
+    comment_text = Column(String)
+    packagetype = Column(String)
+    python_version = Column(String)
+
+    downloads = Column(Integer)
+    size = Column(Integer)
+    upload_time = Column(DateTime)
+
+    release = relationship("Release",
+            cascade="all, delete-orphan",
+            single_parent=True,
+            backref=backref('urls', order_by=url))
+
+    def __repr__(self):
+        return "<URL(url={})>".format(self.url)
+
+class DownloadStats(Base):
+    __tablename__ = 'downloads'
+
+    id = Column(Integer, primary_key=True)
+    release_id = Column(Integer, ForeignKey('releases.id'))
+
+    filename = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=func.now())
+    last_month = Column(Integer)
+    last_week = Column(Integer)
+    last_day = Column(Integer)
+    release = relationship("Release",
+            cascade="all, delete-orphan",
+            single_parent=True,
+            backref=backref('download_stats', order_by=timestamp))
+
+    def __repr__(self):
+        return "<Downloads(filename={}, timestamp={})>".format(self.filename, self.timestamp)
+
+class Change(Base):
+    __tablename__ = 'changes'
+    name = Column(String, nullable=False)
+    version = Column(String)
+    timestamp = Column(DateTime, nullable=False)
+    action = Column(String)
+    serial = Column(Integer, primary_key=True)
+    def __repr__(self):
+        return "<Change(serial={}, name={}, version={})>".format(self.serial, self.name, self.version)
+
+def new_package(package, versions=None):
+    # package: string
+    # version: [string]
+    p = Package(package)
+    if versions:
+        p.releases = [Release(ver) for ver in versions]
+    return p
+
+reldata_keys = [
+    'stable_version',
+    'author',
+    'author_email',
+    'maintainer',
+    'maintainer_email',
+    'home_page',
+    'license',
+    'summary',
+    'description',
+    'keywords',
+    'platform',
+    'requires_python',
+    'download_url',
+    'bugtrack_url',
+    'docs_url',
+    'package_url',
+    'release_url',
+    '_pypi_hidden',
+    '_pypi_ordering',
+    'cheesecake_code_kwalitee_id',
+    'cheesecake_documentation_id',
+    'cheesecake_installability_id',
+]
+
+reldata_deps = [
+    'provides',
+    'requires',
+    'obsoletes',
+    'provides_dist',
+    'requires_dist',
+    'obsoletes_dist',
+    'requires_external',
+]
+
+def new_release(package, version, data, urls):
+    r = Release(version)
+    r.package = Package(package)
+    for k in reldata_keys:
+        if k in data:
+            setattr(r, k, data[k])
+    for k in reldata_deps:
+        if k in data:
+            l = []
+            for i, req in enumerate(data[k]):
+                d = Dependency()
+                d.dep_type = k
+                d.id = i
+                d.req = req
+                l.append(d)
+            setattr(r, k, l)
+    l = []
+    for i, url in enumerate(data.get('project_urls', [])):
+        u = ProjectURL()
+        u.id = i
+        u.url = url
+        l.append(c)
+    r.project_urls = l
+    l = []
+    for i, classifier in enumerate(data.get('classifiers', [])):
+        c = Classifier()
+        c.id = i
+        c.classifier = classifier
+        l.append(c)
+    r.classifiers = l
+
+    l = []
+    for urldata in urls:
+        u = URL()
+        u.url = urldata['url']
+        u.filename = urldata.get('filename', '')
+        u.has_sig = int(urldata.get('has_sig', 0))
+        u.md5_digest = urldata.get('md5_digest')
+        u.comment_text = urldata.get('comment_text', '')
+        u.packagetype = urldata.get('packagetype', '')
+        u.python_version = urldata.get('python_version', '')
+        u.downloads = int(urldata.get('downloads', 0))
+        u.size = int(urldata.get('size', 0))
+        if 'upload_time' in urldata:
+            upl = datetime.datetime.strptime(urldata['upload_time'], '%Y-%m-%dT%H:%M:%S')
+            u.upload_time = upl
+        l.append(u)
+    r.urls = l
+
+    return r
