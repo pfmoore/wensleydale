@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Table
 from xmlrpc.client import ServerProxy
@@ -114,17 +115,28 @@ def remove(db, pkg, ver=None):
     session.commit()
 
 def get(src, db, pkg, ver=None):
+    # TODO: This creates a new package entry every time (and so will fail
+    # constraint violation if the package is reused).
+    # I need to look at the update case separately...
+    # Package part resolved, but still need to look at duplicate releases.
     Session = sessionmaker(bind=db)
     session = Session()
+    package = session.query(Package).filter(Package.name == pkg).first()
+    if package is None:
+        package = Package(pkg)
+    session.add(package)
     if ver:
-        d, u = src.release_data_and_urls(pkg, ver)
+        versions = [ver]
+    else:
+        versions = src.releases(pkg)
+    for v in versions:
+        d, u = src.release_data_and_urls(pkg, v)
         if not d:
             return
-        with session.no_autoflush:
-            rel = new_release(pkg, ver, d, u)
-        session.merge(rel)
-    else:
-        load_package(session, src, pkg)
+        rel = new_release(v, d, u)
+        # Don't append if the version's already present!
+        # We need to check first and overwrite
+        package.releases.append(rel)
     session.commit()
 
 def main():

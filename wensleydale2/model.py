@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy import ForeignKey, ForeignKeyConstraint
+from sqlalchemy import ForeignKey, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import func
 import datetime
@@ -70,6 +70,10 @@ class Release(Base):
             cascade="all, delete-orphan")
     download_stats = relationship("DownloadStats", backref="release",
             cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint('package_id', 'version', name='release_version_uq'),
+    )
 
     def __init__(self, version):
         self.version = version
@@ -205,9 +209,8 @@ reldata_deps = [
     'requires_external',
 ]
 
-def new_release(package, version, data, urls):
+def new_release(version, data, urls):
     r = Release(version)
-    r.package = Package(package)
     for k in reldata_keys:
         if k in data:
             setattr(r, k, data[k])
