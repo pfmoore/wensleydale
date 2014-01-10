@@ -4,14 +4,14 @@ from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Table
 from xmlrpc.client import ServerProxy
 import json
-from .model import Base, Package, new_package, new_release
+from .model import Base, Package, Release, new_package, new_release
 
 # ===========================================================
-
-from progressbar import ProgressBar, Bar, Percentage, ETA
-def pb(name):
-    return [name, ': ', Percentage(), ' ', Bar(), ' ', ETA()]
-
+#
+# from progressbar import ProgressBar, Bar, Percentage, ETA
+# def pb(name):
+#     return [name, ': ', Percentage(), ' ', Bar(), ' ', ETA()]
+#
 # ===========================================================
 
 class PYPISource:
@@ -101,6 +101,16 @@ def rename(db, pkg_old, pkg_new):
     session = Session()
     pkg = session.query(Package).filter_by(name=pkg_old).first()
     pkg.name = pkg_new
+    session.commit()
+
+def remove(db, pkg, ver=None):
+    Session = sessionmaker(bind=db)
+    session = Session()
+    if ver:
+        obj = session.query(Release).join(Package).filter(Package.name == pkg).filter(Release.version == ver).first()
+    else:
+        obj = session.query(Package).filter_by(name=pkg).first()
+    session.delete(obj)
     session.commit()
 
 def get(src, db, pkg, ver=None):

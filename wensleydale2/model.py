@@ -12,7 +12,9 @@ class Package(Base):
 
     id = Column(Integer, primary_key=True)
 
-    name = Column(String, nullable=False)
+    name = Column(String, unique=True, nullable=False)
+    releases = relationship("Release", backref="package",
+            cascade="all, delete-orphan")
 
     def __init__(self, name):
         self.name = name
@@ -58,10 +60,16 @@ class Release(Base):
 
     project_url = Column(String)
 
-    package = relationship("Package",
-            cascade="all, delete-orphan",
-            single_parent=True,
-            backref=backref('releases', order_by=version))
+    dependencies = relationship("Dependency", backref="release",
+            cascade="all, delete-orphan")
+    classifiers = relationship("Classifier", backref="release",
+            cascade="all, delete-orphan")
+    project_urls = relationship("ProjectURL", backref="release",
+            cascade="all, delete-orphan")
+    urls = relationship("URL", backref="release",
+            cascade="all, delete-orphan")
+    download_stats = relationship("DownloadStats", backref="release",
+            cascade="all, delete-orphan")
 
     def __init__(self, version):
         self.version = version
@@ -81,11 +89,6 @@ class Dependency(Base):
 
     req = Column(String, nullable=False)
 
-    release = relationship("Release",
-            cascade="all, delete-orphan",
-            single_parent=True,
-            backref=backref('dependencies'))
-
     def __repr__(self):
         return "<Dependency(type={}, req={})>".format(self.dep_type, self.req)
 
@@ -97,11 +100,6 @@ class Classifier(Base):
 
     classifier = Column(String, nullable=False)
 
-    release = relationship("Release",
-            cascade="all, delete-orphan",
-            single_parent=True,
-            backref=backref('classifiers'))
-
     def __repr__(self):
         return "<Classifier({})>".format(self.classifier)
 
@@ -112,11 +110,6 @@ class ProjectURL(Base):
     release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     url = Column(String, nullable=False)
-
-    release = relationship("Release",
-            cascade="all, delete-orphan",
-            single_parent=True,
-            backref=backref('project_urls', order_by=id))
 
     def __repr__(self):
         return "<ProjectURL(url={})>".format(self.url)
@@ -141,11 +134,6 @@ class URL(Base):
     size = Column(Integer)
     upload_time = Column(DateTime)
 
-    release = relationship("Release",
-            cascade="all, delete-orphan",
-            single_parent=True,
-            backref=backref('urls', order_by=url))
-
     def __repr__(self):
         return "<URL(url={})>".format(self.url)
 
@@ -160,10 +148,6 @@ class DownloadStats(Base):
     last_month = Column(Integer)
     last_week = Column(Integer)
     last_day = Column(Integer)
-    release = relationship("Release",
-            cascade="all, delete-orphan",
-            single_parent=True,
-            backref=backref('download_stats', order_by=timestamp))
 
     def __repr__(self):
         return "<Downloads(filename={}, timestamp={})>".format(self.filename, self.timestamp)
@@ -233,21 +217,21 @@ def new_release(package, version, data, urls):
             for i, req in enumerate(data[k]):
                 d = Dependency()
                 d.dep_type = k
-                d.id = i
+                # d.id = i
                 d.req = req
                 l.append(d)
             setattr(r, k, l)
     l = []
     for i, url in enumerate(data.get('project_urls', [])):
         u = ProjectURL()
-        u.id = i
+        # u.id = i
         u.url = url
         l.append(c)
     r.project_urls = l
     l = []
     for i, classifier in enumerate(data.get('classifiers', [])):
         c = Classifier()
-        c.id = i
+        # c.id = i
         c.classifier = classifier
         l.append(c)
     r.classifiers = l
