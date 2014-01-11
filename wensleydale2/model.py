@@ -209,8 +209,7 @@ reldata_deps = [
     'requires_external',
 ]
 
-def new_release(version, data, urls):
-    r = Release(version)
+def set_release_data(r, data, urls):
     for k in reldata_keys:
         if k in data:
             setattr(r, k, data[k])
@@ -238,23 +237,20 @@ def new_release(version, data, urls):
         c.classifier = classifier
         l.append(c)
     r.classifiers = l
+    r.urls = [new_url(url) for url in urls]
 
-    l = []
-    for urldata in urls:
-        u = URL()
-        u.url = urldata['url']
-        u.filename = urldata.get('filename', '')
-        u.has_sig = int(urldata.get('has_sig', 0))
-        u.md5_digest = urldata.get('md5_digest')
-        u.comment_text = urldata.get('comment_text', '')
-        u.packagetype = urldata.get('packagetype', '')
-        u.python_version = urldata.get('python_version', '')
-        u.downloads = int(urldata.get('downloads', 0))
-        u.size = int(urldata.get('size', 0))
-        if 'upload_time' in urldata:
-            upl = datetime.datetime.strptime(urldata['upload_time'], '%Y-%m-%dT%H:%M:%S')
-            u.upload_time = upl
-        l.append(u)
-    r.urls = l
-
-    return r
+def new_url(urldata):
+    u = URL()
+    u.url = urldata['url']
+    u.filename = urldata.get('filename', '')
+    u.has_sig = int(urldata.get('has_sig', 0))
+    u.md5_digest = urldata.get('md5_digest')
+    u.comment_text = urldata.get('comment_text', '')
+    u.packagetype = urldata.get('packagetype', '')
+    u.python_version = urldata.get('python_version', '')
+    u.downloads = int(urldata.get('downloads', 0))
+    u.size = int(urldata.get('size', 0))
+    if 'upload_time' in urldata:
+        upl = datetime.datetime.strptime(urldata['upload_time'], '%Y-%m-%dT%H:%M:%S')
+        u.upload_time = upl
+    return u

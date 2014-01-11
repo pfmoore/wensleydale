@@ -5,7 +5,7 @@ from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Table
 from xmlrpc.client import ServerProxy
 import json
-from .model import Base, Package, Release, new_package, new_release
+from .model import Base, Package, Release, URL, new_package, set_release_data
 
 # ===========================================================
 #
@@ -76,23 +76,8 @@ class JSONSource:
             return ({}, [])
         return data['info'], data['urls']
 
-def load_release(session, src, pkg, ver):
-    d, u = src.release_data_and_urls(pkg, ver)
-    if not d:
-        return False
-    r = new_release(pkg, ver, d, u)
-    session.merge(r)
-    return True
-
-def load_package(session, src, pkg):
-    rels = src.releases(pkg)
-    print("{} ({} versions): ".format(pkg, len(rels)), end='', flush=True)
-    p = new_package(pkg, rels)
-    session.merge(p)
-    for ver in rels:
-        ok = load_release(session, src, pkg, ver)
-        print("." if ok else "X", end="", flush=True)
-    print(" OK")
+# Actions
+# =======
 
 def init(db):
     Base.metadata.create_all(db)
@@ -114,29 +99,78 @@ def remove(db, pkg, ver=None):
     session.delete(obj)
     session.commit()
 
-def get(src, db, pkg, ver=None):
-    # TODO: This creates a new package entry every time (and so will fail
-    # constraint violation if the package is reused).
-    # I need to look at the update case separately...
-    # Package part resolved, but still need to look at duplicate releases.
+# The following is messy (and wrong)
+#
+# What we want are the following actions:
+#
+# 1. Load a completely new package
+# 1a. Update a package (can be implemented as delete & load).
+#     Having update as separate may offer opportunities for optimisation, but
+#     it's not clear at the moment if that would acrtually be true.
+# 2. Add a release to a package
+
+def new(src, db, pkg):
     Session = sessionmaker(bind=db)
     session = Session()
+    
+    # Error checking - handle a package that exists already
+    package = Package(pkg)
+    session.add(package)
+    package.releases = [Release(ver) for ver in src.releases(pkg)]
+
+    for rel in package.releases:
+        data, urls = src.release_data_and_urls(pkg, rel.version)
+        set_release_data(rel, data, urls)
+
+    session.commit()
+
+def new_rel(src, db, pkg, ver):
+    Session = sessionmaker(bind=db)
+    session = Session()
+    
+    # Package must exist! Error checking...
+    package = session.query(Package).filter(Package.name == pkg).first()
+    release = Release(ver)
+    data, urls = src.release_data_and_urls(pkg, ver)
+    set_release_data(release, data, urls)
+    release.package = package
+
+    session.commit()
+
+def get(src, db, pkg, ver=None):
+    Session = sessionmaker(bind=db)
+    session = Session()
+
+    # Find the package. If there isn't one already, create it
     package = session.query(Package).filter(Package.name == pkg).first()
     if package is None:
         package = Package(pkg)
+    # Add the package to the sesion, as we're changing its list of releases
     session.add(package)
+    # If we are getting a specific version, first delete it if it's already
+    # present (this will remove it from the package's list of releases)
     if ver:
+        rel = session.query(Release).join(Package).filter(Package.name == pkg).filter(Release.version == ver).first()
+        if rel:
+            print(">>> DELETING", rel.version, rel.package_id)
+            # Doesn't work because it's still in the package's list...
+            session.delete(rel)
         versions = [ver]
     else:
+        # We are refreshing all releases, so get the list of releases and
+        # clear the existing releases from the package object.
         versions = src.releases(pkg)
+        package.releases = []
+
+    # Create a new release object for each version, and set its package. This
+    # will add it to the package's list of releases.
     for v in versions:
         d, u = src.release_data_and_urls(pkg, v)
         if not d:
             return
-        rel = new_release(v, d, u)
-        # Don't append if the version's already present!
-        # We need to check first and overwrite
-        package.releases.append(rel)
+        rel = Release(v)
+        set_release_data(rel, d, u)
+        rel.package = package
     session.commit()
 
 def main():
@@ -145,10 +179,7 @@ def main():
     Session = sessionmaker(bind=e)
 
     src = JSONSource()
-    session = Session()
-    #bar = ProgressBar(widgets=pb("Packages"))
 
     for pkg in src.packages()[:100000]:
-        load_package(session, src, pkg)
-    session.commit()
+        get(e, src, pkg)
 
