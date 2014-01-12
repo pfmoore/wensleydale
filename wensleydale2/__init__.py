@@ -5,6 +5,7 @@ from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Table
 from xmlrpc.client import ServerProxy
 import json
+import datetime
 from .model import Base, Package, Release, URL, new_package, set_release_data
 
 # ===========================================================
@@ -172,6 +173,28 @@ def get(src, db, pkg, ver=None):
         set_release_data(rel, d, u)
         rel.package = package
     session.commit()
+
+def process_change(src, db, change):
+    pkg, ver, timestamp, action, serial = change
+    ts = datetime.datetime(1070,1,1) + datetime.timedelta(seconds=timestamp)
+    act = action.split()
+
+    if act[0] == 'remove' and len(act) == 1:
+        remove(db, pkg, ver)
+    elif act[0] == 'new' and act[1] == 'release' and len(act) == 2:
+        new_rel(src, db, pkg, ver)
+    elif act[0] == 'rename' and act[1] == 'from' and len(act) == 3:
+        rename(db, act[2], pkg)
+    elif act[0] == 'add' and len(act) > 2 and (act[2] == 'url' or act[3] == 'file'):
+        update(src, db, pkg, ver)
+    elif act[0] == 'update' and ver:
+        update(src, db, pkg, ver)
+    elif act[0] == 'update' and act[1] == 'hosting_mode':
+        pass
+    elif (act[0] == 'remove' or act[0] == 'new') and (act[1] == 'Owner' or act[1] == 'Maintainer'):
+        pass # Nothing to do
+    else:
+        print("Unknown action: {} for {}{}".format(action, pkg,  '/' + ver if ver else ""))
 
 def main():
     e = create_engine("sqlite:///t.db")
