@@ -93,6 +93,10 @@ class Dependency(Base):
 
     req = Column(String, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint('release_id', 'dep_type', req, name='dependency_uq'),
+    )
+
     def __repr__(self):
         return "<Dependency(type={}, req={})>".format(self.dep_type, self.req)
 
@@ -103,6 +107,10 @@ class Classifier(Base):
     release_id = Column(Integer, ForeignKey('releases.id'), nullable=False)
 
     classifier = Column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('release_id', 'classifier', name='classifier_uq'),
+    )
 
     def __repr__(self):
         return "<Classifier({})>".format(self.classifier)
@@ -115,6 +123,10 @@ class ProjectURL(Base):
 
     url = Column(String, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint('release_id', 'url', name='projecturl_url_uq'),
+    )
+
     def __repr__(self):
         return "<ProjectURL(url={})>".format(self.url)
 
@@ -126,7 +138,7 @@ class URL(Base):
 
     url = Column(String, nullable=False)
 
-    filename = Column(String)
+    filename = Column(String, nullable=False)
     has_sig = Column(Boolean)
     md5_digest = Column(String)
 
@@ -137,6 +149,11 @@ class URL(Base):
     downloads = Column(Integer)
     size = Column(Integer)
     upload_time = Column(DateTime)
+
+    __table_args__ = (
+        UniqueConstraint('release_id', 'url', name='url_url_uq'),
+        UniqueConstraint('release_id', 'filename', name='url_filename_uq'),
+    )
 
     def __repr__(self):
         return "<URL(url={})>".format(self.url)
