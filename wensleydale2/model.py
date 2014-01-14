@@ -4,8 +4,13 @@ from sqlalchemy import ForeignKey, ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import func
 import datetime
+import xmlrpc.client
 
 Base = declarative_base()
+
+class LatestChange(Base):
+    __tablename__ = 'latest'
+    serial = Column(Integer, primary_key=True)
 
 class Package(Base):
     __tablename__ = 'packages'
@@ -15,6 +20,8 @@ class Package(Base):
     name = Column(String, unique=True, nullable=False)
     releases = relationship("Release", backref="package",
             cascade="all, delete-orphan")
+
+    serial = Column(Integer)
 
     def __init__(self, name):
         self.name = name
@@ -71,6 +78,8 @@ class Release(Base):
     download_stats = relationship("DownloadStats", backref="release",
             cascade="all, delete-orphan")
 
+    serial = Column(Integer)
+
     __table_args__ = (
         UniqueConstraint('package_id', 'version', name='release_version_uq'),
     )
@@ -108,9 +117,12 @@ class Classifier(Base):
 
     classifier = Column(String, nullable=False)
 
-    __table_args__ = (
-        UniqueConstraint('release_id', 'classifier', name='classifier_uq'),
-    )
+    # Sadly, classifiers are *not* unique for a package/release - see "acl
+    # 0.2" for an example...
+    #
+    # __table_args__ = (
+    #     UniqueConstraint('release_id', 'classifier', name='classifier_uq'),
+    # )
 
     def __repr__(self):
         return "<Classifier({})>".format(self.classifier)
@@ -268,6 +280,10 @@ def new_url(urldata):
     u.downloads = int(urldata.get('downloads', 0))
     u.size = int(urldata.get('size', 0))
     if 'upload_time' in urldata:
-        upl = datetime.datetime.strptime(urldata['upload_time'], '%Y-%m-%dT%H:%M:%S')
+        upl = urldata['upload_time']
+        if isinstance(upl, xmlrpc.client.DateTime):
+            upl = datetime.datetime.strptime(upl.value, "%Y%m%dT%H:%M:%S")
+        else:
+            upl = datetime.datetime.strptime(upl, '%Y-%m-%dT%H:%M:%S')
         u.upload_time = upl
     return u
