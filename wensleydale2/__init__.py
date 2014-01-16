@@ -94,7 +94,7 @@ def pkg_rename(session, old, new, serial=0):
     pkg.name = new
     pkg.serial = serial
 
-def pkg_remove(session, name, ver):
+def pkg_remove(session, name):
     pkg = session.query(Package).filter_by(name=name).first()
     if pkg:
         session.delete(pkg)
@@ -140,6 +140,8 @@ def process_change(src, session, change):
     act = action.split()
 
     if len(act) == 1 and act[0] == 'create':
+        pkg_remove(session, name)
+        session.flush()
         pkg_add(session, src, name)
     elif len(act) == 1 and act[0] == 'remove':
         rel_remove(session, name, ver)
@@ -158,6 +160,9 @@ def process_change(src, session, change):
         pass # Possibly wrong...
     elif len(act) > 1 and act[0] == 'update' and act[1] == 'hosting_mode':
         pass
+    elif len(act) > 1 and act[0] == 'remove' and act[1] == 'file':
+        rel_remove(session, name, ver)
+        rel_add(session, src, name, ver, serial)
     elif len(act) > 1 and (act[0] == 'remove' or act[0] == 'add') and (act[1] == 'Owner' or act[1] == 'Maintainer'):
         pass # Nothing to do
     else:

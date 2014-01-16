@@ -1,3 +1,5 @@
+#!C:\Work\Projects\wensleydale\ve\Scripts\python.exe
+
 import argparse
 import wensleydale2
 from sqlalchemy import create_engine
@@ -15,9 +17,9 @@ def batch_process(lst, batch=100, callback=lambda: None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("command")
-    parser.add_argument("--source")
-    parser.add_argument("--db")
+    parser.add_argument("command", default="update")
+    parser.add_argument("--source", default="pypi:")
+    parser.add_argument("--db", default="sqlite:///pypi_w.db")
     args = parser.parse_args()
 
     db = create_engine(args.db)
